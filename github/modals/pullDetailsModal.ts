@@ -41,6 +41,7 @@ export async function pullDetailsModal({
 
     const block = modify.getCreator().getBlockBuilder();
     const showChanges = await isActionOn(read, AppSettingsEnum.PRViewChangesID);
+    let pullHtmlUrl: string | undefined;
 
     const room =
         slashcommandcontext?.getRoom() ||
@@ -99,6 +100,7 @@ export async function pullDetailsModal({
         }
 
         const pullData = pullRawData.data;
+        pullHtmlUrl = pullData?.html_url;
 
         const pullRequestFilesRaw = await http.get(
             `https://api.github.com/repos/${data?.repository}/pulls/${data?.number}/files`,
@@ -188,6 +190,18 @@ export async function pullDetailsModal({
                 })
             );
         }
+    }
+    if (pullHtmlUrl) {
+        elements.push(
+            block.newButtonElement({
+                actionId: ModalsEnum.VIEW_PULL_REQUEST_ON_GITHUB_ACTION,
+                text: {
+                    text: ModalsEnum.VIEW_PULL_REQUEST_ON_GITHUB_LABEL,
+                    type: TextObjectType.PLAINTEXT,
+                },
+                url: pullHtmlUrl,
+            })
+        );
     }
     if (elements.length) {
         block.addActionsBlock({ elements });
