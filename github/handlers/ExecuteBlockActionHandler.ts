@@ -480,7 +480,8 @@ export class ExecuteBlockActionHandler {
                                 read: this.read,
                                 persistence: this.persistence,
                                 http: this.http,
-                                uikitcontext: context
+                                uikitcontext: context,
+                                accessToken: await getAccessTokenForUser(this.read, user, this.app.oauth2Config),
                             });
                             return context
                                     .getInteractionResponder()

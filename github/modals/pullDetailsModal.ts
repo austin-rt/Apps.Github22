@@ -15,6 +15,7 @@ import {
     UIKitInteractionContext,
 } from "@rocket.chat/apps-engine/definition/uikit";
 import { storeInteractionRoomData, getInteractionRoomData } from "../persistance/roomInteraction";
+import { IAuthData } from "@rocket.chat/apps-engine/definition/oauth2/IOAuth2";
 
 export async function pullDetailsModal({
     data,
@@ -24,6 +25,7 @@ export async function pullDetailsModal({
     http,
     slashcommandcontext,
     uikitcontext,
+    accessToken,
 }: {
     data?;
     modify: IModify;
@@ -32,6 +34,7 @@ export async function pullDetailsModal({
     http: IHttp;
     slashcommandcontext?: SlashCommandContext;
     uikitcontext?: UIKitInteractionContext;
+    accessToken?: IAuthData;
 }): Promise<IUIKitModalViewParam> {
     const viewId = ModalsEnum.PULL_VIEW;
 
@@ -53,8 +56,14 @@ export async function pullDetailsModal({
             roomId = (await getInteractionRoomData(read.getPersistenceReader(), user.id)).roomId;
         }
 
+        // Without the user's token, a private repository answers 404 and the PR looks missing.
+        const requestOptions = accessToken?.token
+            ? { headers: { Authorization: `token ${accessToken.token}` } }
+            : {};
+
         const pullRawData = await http.get(
-            `https://api.github.com/repos/${data?.repository}/pulls/${data?.number}`
+            `https://api.github.com/repos/${data?.repository}/pulls/${data?.number}`,
+            requestOptions
         );
 
         // If pullsNumber doesn't exist, notify the user
@@ -84,7 +93,8 @@ export async function pullDetailsModal({
         const pullData = pullRawData.data;
 
         const pullRequestFilesRaw = await http.get(
-            `https://api.github.com/repos/${data?.repository}/pulls/${data?.number}/files`
+            `https://api.github.com/repos/${data?.repository}/pulls/${data?.number}/files`,
+            requestOptions
         );
 
         const pullRequestFiles = pullRequestFilesRaw.data;
