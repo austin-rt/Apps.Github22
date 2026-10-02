@@ -89,8 +89,7 @@ export class githubWebHooks extends ApiEndpoint {
             }
         }
         let prActionsBlock: BlockBuilder | undefined;
-        const prLinkActions = await read.getEnvironmentReader().getSettings().getValueById(AppSettingsEnum.PRLinkActionsID);
-        if (event == "pull_request" && prLinkActions) {
+        if (event == "pull_request" && await read.getEnvironmentReader().getSettings().getValueById(AppSettingsEnum.PRAlertActionsID)) {
             prActionsBlock = modify.getCreator().getBlockBuilder();
             prActionsBlock.addActionsBlock({
                 elements: [

@@ -37,7 +37,7 @@ export async function handleGithubPRLinks(
                     text: `PR Actions in ${repositoryName} #${pullNumber}`,
                     msg: `/github ${username}/${repositoryName} pulls ${pullNumber}`,
                     msg_in_chat_window: true,
-                    // The default, sendMessage, posts the command as plain text instead of running it.
+                    // Rocket.Chat 8.x runs slash commands only from the composer, so the default, sendMessage, posts this as plain text.
                     msg_processing_type: MessageProcessingType.RespondWithMessage,
                 },
             ],
