@@ -4,7 +4,7 @@ import {
     IPersistence,
     IRead,
 } from "@rocket.chat/apps-engine/definition/accessors";
-import { TextObjectType } from "@rocket.chat/apps-engine/definition/uikit/blocks";
+import { IButtonElement, TextObjectType } from "@rocket.chat/apps-engine/definition/uikit/blocks";
 import { IUIKitModalViewParam } from "@rocket.chat/apps-engine/definition/uikit/UIKitInteractionResponder";
 import { IUser } from "@rocket.chat/apps-engine/definition/users";
 import { ModalsEnum } from "../enum/Modals";
@@ -16,6 +16,7 @@ import {
 } from "@rocket.chat/apps-engine/definition/uikit";
 import { storeInteractionRoomData, getInteractionRoomData } from "../persistance/roomInteraction";
 import { IAuthData } from "@rocket.chat/apps-engine/definition/oauth2/IOAuth2";
+import { AppSettingsEnum, isActionOn } from "../settings/settings";
 
 export async function pullDetailsModal({
     data,
@@ -39,6 +40,7 @@ export async function pullDetailsModal({
     const viewId = ModalsEnum.PULL_VIEW;
 
     const block = modify.getCreator().getBlockBuilder();
+    const showChanges = await isActionOn(read, AppSettingsEnum.PRViewChangesID);
 
     const room =
         slashcommandcontext?.getRoom() ||
@@ -110,14 +112,16 @@ export async function pullDetailsModal({
                 text: `*${pullData?.title}*`,
                 type: TextObjectType.MARKDOWN,
             },
-            accessory: block.newButtonElement({
-                actionId: ModalsEnum.VIEW_FILE_ACTION,
-                text: {
-                    text: ModalsEnum.VIEW_DIFFS_ACTION_LABEL,
-                    type: TextObjectType.PLAINTEXT,
-                },
-                value: pullData["diff_url"],
-            }),
+            accessory: showChanges
+                ? block.newButtonElement({
+                      actionId: ModalsEnum.VIEW_FILE_ACTION,
+                      text: {
+                          text: ModalsEnum.VIEW_DIFFS_ACTION_LABEL,
+                          type: TextObjectType.PLAINTEXT,
+                      },
+                      value: pullData["diff_url"],
+                  })
+                : undefined,
         });
         block.addContextBlock({
             elements: [
@@ -142,14 +146,16 @@ export async function pullDetailsModal({
                     text: `${index} ${fileName}`,
                     type: TextObjectType.PLAINTEXT,
                 },
-                accessory: block.newButtonElement({
-                    actionId: ModalsEnum.VIEW_FILE_ACTION,
-                    text: {
-                        text: ModalsEnum.VIEW_FILE_ACTION_LABEL,
-                        type: TextObjectType.PLAINTEXT,
-                    },
-                    value: rawUrl,
-                }),
+                accessory: showChanges
+                    ? block.newButtonElement({
+                          actionId: ModalsEnum.VIEW_FILE_ACTION,
+                          text: {
+                              text: ModalsEnum.VIEW_FILE_ACTION_LABEL,
+                              type: TextObjectType.PLAINTEXT,
+                          },
+                          value: rawUrl,
+                      })
+                    : undefined,
             });
             block.addContextBlock({
                 elements: [
@@ -163,34 +169,29 @@ export async function pullDetailsModal({
         }
     }
 
-    block.addActionsBlock({
-        elements: [
-            block.newButtonElement({
-                actionId: ModalsEnum.MERGE_PULL_REQUEST_ACTION,
-                text: {
-                    text: ModalsEnum.MERGE_PULL_REQUEST_LABEL,
-                    type: TextObjectType.PLAINTEXT,
-                },
-                value: `${data?.repository} ${data?.number}`,
-            }),
-            block.newButtonElement({
-                actionId: ModalsEnum.PR_COMMENT_LIST_ACTION,
-                text: {
-                    text: ModalsEnum.PR_COMMENT_LIST_LABEL,
-                    type: TextObjectType.PLAINTEXT,
-                },
-                value: `${data?.repository} ${data?.number}`,
-            }),
-            block.newButtonElement({
-                actionId: ModalsEnum.APPROVE_PULL_REQUEST_ACTION,
-                text: {
-                    text: ModalsEnum.APPROVE_PULL_REQUEST_LABEL,
-                    type: TextObjectType.PLAINTEXT,
-                },
-                value: `${data?.repository} ${data?.number}`,
-            }),
-        ],
-    });
+    const actions = [
+        { setting: AppSettingsEnum.PRViewMergeID, actionId: ModalsEnum.MERGE_PULL_REQUEST_ACTION, label: ModalsEnum.MERGE_PULL_REQUEST_LABEL },
+        { setting: AppSettingsEnum.PRViewCommentsID, actionId: ModalsEnum.PR_COMMENT_LIST_ACTION, label: ModalsEnum.PR_COMMENT_LIST_LABEL },
+        { setting: AppSettingsEnum.PRViewApproveID, actionId: ModalsEnum.APPROVE_PULL_REQUEST_ACTION, label: ModalsEnum.APPROVE_PULL_REQUEST_LABEL },
+    ];
+    const elements: IButtonElement[] = [];
+    for (const action of actions) {
+        if (await isActionOn(read, action.setting)) {
+            elements.push(
+                block.newButtonElement({
+                    actionId: action.actionId,
+                    text: {
+                        text: action.label,
+                        type: TextObjectType.PLAINTEXT,
+                    },
+                    value: `${data?.repository} ${data?.number}`,
+                })
+            );
+        }
+    }
+    if (elements.length) {
+        block.addActionsBlock({ elements });
+    }
 
     return {
         id: viewId,
