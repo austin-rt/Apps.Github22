@@ -93,7 +93,7 @@ export async function pullDetailsModal({
 
         block.addSectionBlock({
             text: {
-                text: `*${pullData?.title}*`,
+                text: `*[${pullData?.title}](${pullData?.html_url})*`,
                 type: TextObjectType.MARKDOWN,
             },
             accessory: showChanges
