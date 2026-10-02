@@ -56,21 +56,27 @@ export async function pullDetailsModal({
             roomId = (await getInteractionRoomData(read.getPersistenceReader(), user.id)).roomId;
         }
 
-        // Without the user's token, a private repository answers 404 and the PR looks missing.
-        const requestOptions = accessToken?.token
+        let requestOptions = accessToken?.token
             ? { headers: { Authorization: `token ${accessToken.token}` } }
             : {};
+        const pullUrl = `https://api.github.com/repos/${data?.repository}/pulls/${data?.number}`;
 
-        const pullRawData = await http.get(
-            `https://api.github.com/repos/${data?.repository}/pulls/${data?.number}`,
-            requestOptions
-        );
+        let pullRawData = await http.get(pullUrl, requestOptions);
+
+        // A revoked or expired token gets 401 even on a public repository, so retry without it.
+        if (pullRawData.statusCode === 401 && accessToken?.token) {
+            requestOptions = {};
+            pullRawData = await http.get(pullUrl);
+        }
+        const loggedIn = "headers" in requestOptions;
 
         // If pullsNumber doesn't exist, notify the user
         if (pullRawData.statusCode === 404) {
             block.addSectionBlock({
                 text: {
-                    text: `Pull request #${data?.number} doesn't exist.`,
+                    text: loggedIn
+                        ? `Pull request #${data?.number} doesn't exist.`
+                        : `Pull request #${data?.number} doesn't exist, or it is in a private repository. Log in with /github login to see private repositories.`,
                     type: TextObjectType.PLAINTEXT,
                 },
             });
