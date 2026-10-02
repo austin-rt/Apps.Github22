@@ -98,6 +98,11 @@ export class githubWebHooks extends ApiEndpoint {
                         text: prActionsBlock.newPlainTextObject("PR Actions"),
                         value: `${payload.repository.full_name} ${payload.pull_request.number}`,
                     }),
+                    prActionsBlock.newButtonElement({
+                        actionId: ModalsEnum.VIEW_PULL_REQUEST_ON_GITHUB_ACTION,
+                        text: prActionsBlock.newPlainTextObject(ModalsEnum.VIEW_PULL_REQUEST_ON_GITHUB_LABEL),
+                        url: payload.pull_request.html_url,
+                    }),
                 ],
             });
         }
