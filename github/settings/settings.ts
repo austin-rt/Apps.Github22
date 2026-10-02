@@ -9,7 +9,9 @@ export enum AppSettingsEnum {
     BaseHostPackageValue = "https://github.com/",
     BaseApiHostID = "base_api_host_id",
     BaseApiHostLabel = "base_api_host_label",
-    BaseApiHostPackageValue = "https://api.github.com/"
+    BaseApiHostPackageValue = "https://api.github.com/",
+    PRLinkActionsID = "pr_link_actions_id",
+    PRLinkActionsLabel = "pr_link_actions_label",
 }
 export const settings: ISetting[] = [
     {
@@ -35,5 +37,13 @@ export const settings: ISetting[] = [
         required: true,
         public: false,
         packageValue: AppSettingsEnum.BaseApiHostPackageValue,
+    },
+    {
+        id: AppSettingsEnum.PRLinkActionsID,
+        i18nLabel: AppSettingsEnum.PRLinkActionsLabel,
+        type: SettingType.BOOLEAN,
+        required: false,
+        public: false,
+        packageValue: true,
     },
 ];

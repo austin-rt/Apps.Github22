@@ -14,6 +14,9 @@ import {
 import { Subscription } from "../persistance/subscriptions";
 import { ISubscription } from "../definitions/subscription";
 import { IRoom } from "@rocket.chat/apps-engine/definition/rooms";
+import { BlockBuilder } from "@rocket.chat/apps-engine/definition/uikit";
+import { AppSettingsEnum } from "../settings/settings";
+import { ModalsEnum } from "../enum/Modals";
 export class githubWebHooks extends ApiEndpoint {
     public path = "githubwebhook";
 
@@ -85,6 +88,20 @@ export class githubWebHooks extends ApiEndpoint {
                 return this.success();
             }
         }
+        let prActionsBlock: BlockBuilder | undefined;
+        const prLinkActions = await read.getEnvironmentReader().getSettings().getValueById(AppSettingsEnum.PRLinkActionsID);
+        if (event == "pull_request" && prLinkActions) {
+            prActionsBlock = modify.getCreator().getBlockBuilder();
+            prActionsBlock.addActionsBlock({
+                elements: [
+                    prActionsBlock.newButtonElement({
+                        actionId: ModalsEnum.VIEW_GITHUB_SEARCH_RESULT_PR_CHANGES,
+                        text: prActionsBlock.newPlainTextObject("PR Actions"),
+                        value: `${payload.repository.full_name} ${payload.pull_request.number}`,
+                    }),
+                ],
+            });
+        }
         for (let subscription of subscriptions) {
             let roomId = subscription.room;
             if (!roomId) {
@@ -99,6 +116,9 @@ export class githubWebHooks extends ApiEndpoint {
                 .setText(messageText);
             if (room) {
                 textSender.setRoom(room);
+            }
+            if (prActionsBlock) {
+                textSender.setBlocks(prActionsBlock);
             }
             await modify.getCreator().finish(textSender);
         }
